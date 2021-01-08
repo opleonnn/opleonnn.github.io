@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Leon</title>
+    <link>https://opleonnn.github.io/posts/</link>
+    <description>Recent content in Posts on Leon</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>© Leon.</copyright>
+    <lastBuildDate>Fri, 08 Jan 2021 14:30:41 +0800</lastBuildDate><atom:link href="https://opleonnn.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>My First Post</title>
+      <link>https://opleonnn.github.io/posts/my-first-post/</link>
+      <pubDate>Fri, 08 Jan 2021 14:30:41 +0800</pubDate>
+      
+      <guid>https://opleonnn.github.io/posts/my-first-post/</guid>
+      <description>my first post.</description>
+    </item>
+    
+  </channel>
+</rss>
