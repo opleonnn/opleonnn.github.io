@@ -1,2 +1,0 @@
-# opleonnn.github.io
-blog
