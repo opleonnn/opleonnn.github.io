@@ -2,7 +2,7 @@
 title: "Swift Dispatch"
 date: 2021-01-08T14:30:41+08:00
 type: "posts"
-draft: true
+draft: false
 ---
 
 本文探讨一下 Swift 中的方法调度。

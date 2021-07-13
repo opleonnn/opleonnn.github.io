@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Leon</title>
-    <link>https://opleonnn.github.io/</link>
-    <description>Recent content on Leon</description>
+    <title>Posts on Leon</title>
+    <link>https://opleonnn.github.io/posts/</link>
+    <description>Recent content in Posts on Leon</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>© Leon.</copyright>
-    <lastBuildDate>Fri, 08 Jan 2021 14:30:41 +0800</lastBuildDate><atom:link href="https://opleonnn.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 08 Jan 2021 14:30:41 +0800</lastBuildDate><atom:link href="https://opleonnn.github.io/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Swift Dispatch</title>
       <link>https://opleonnn.github.io/posts/swift-dispatch/</link>
@@ -26,15 +26,6 @@
 方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。
     2. SIL SIL 是 Swift 编译器中间语言，通过 swiftc 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过SIL文档中对动态调度的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：
  class_method 和 super_method 使用 vtable 派发 witness_method 使用 witness_table 派发(Swift 协议中函数表派发的实现) objc_method 和 objc_super_method 使用 Objective-C message 派发，并使用 foreign 标记 其他诸如 function_ref 等指令使用的是静态派发  3.</description>
-    </item>
-    
-    <item>
-      <title>关于我</title>
-      <link>https://opleonnn.github.io/about/</link>
-      <pubDate>Fri, 19 Apr 2019 21:37:58 +0530</pubDate>
-      
-      <guid>https://opleonnn.github.io/about/</guid>
-      <description>大家好，我是 Leon，一名码农，目前专注于 iOS 和 Swift 领域。</description>
     </item>
     
   </channel>
