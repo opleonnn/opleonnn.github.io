@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge"><title>Swift Dispatch - Leon</title><meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta itemprop="name" content="Swift Dispatch">
+<meta itemprop="description" content="本文探讨一下 Swift 中的方法调度。
+1. 派发机制 函数派发(Method Dispatch)又名方法调度，简单讲就是编程语言在源代码中判断用哪种方式调用函数的机制。一般来讲方法派发的方式分为两种：
+  静态派发(Static Dispatch)
+又被称为直接派发，系统直接按照方法的具体实现地址进行调用，在编译期间就确定了调用的方法的具体实现。甚至编译器能够进行内联优化，因此，当调用该方法时，调用的指令集非常少，执行速度快，但相应的缺点也很明显，没有动态性。我们常见的C语言就使用直接派发、C&#43;&#43;默认也使用直接派发。
+  动态派发(Dynamic Dispatch)
+动态派发是指需要在运行时选择方法的具体实现。动态调度是多态的具体实现过程，被广泛的应用于 OOP 语言(object-oriented programing)中。一般实现动态派发的方式有以下几种：
+  函数表派发
+函数表派发是动态派发最常见的一种实现方式。每个类中会存在一个函数表，存储了每个函数实现的指针。当调用方法时，先找到类的函数表，然后再函数表中找到要调用的方法指针，最后根据该指针找到方法的具体实现。C&#43;&#43;、Java 等语言就是通过函数表的方式来实现多态。
+  消息派发
+方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。
+    2. SIL SIL 是 Swift 编译器中间语言，通过 swiftc 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过SIL文档中对动态调度的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：
+ class_method 和 super_method 使用 vtable 派发 witness_method 使用 witness_table 派发(Swift 协议中函数表派发的实现) objc_method 和 objc_super_method 使用 Objective-C message 派发，并使用 foreign 标记 其他诸如 function_ref 等指令使用的是静态派发  3."><meta itemprop="datePublished" content="2021-01-08T14:30:41&#43;08:00" />
+<meta itemprop="dateModified" content="2021-01-08T14:30:41&#43;08:00" />
+<meta itemprop="wordCount" content="1264">
+<meta itemprop="keywords" content="" /><meta property="og:title" content="Swift Dispatch" />
+<meta property="og:description" content="本文探讨一下 Swift 中的方法调度。
+1. 派发机制 函数派发(Method Dispatch)又名方法调度，简单讲就是编程语言在源代码中判断用哪种方式调用函数的机制。一般来讲方法派发的方式分为两种：
+  静态派发(Static Dispatch)
+又被称为直接派发，系统直接按照方法的具体实现地址进行调用，在编译期间就确定了调用的方法的具体实现。甚至编译器能够进行内联优化，因此，当调用该方法时，调用的指令集非常少，执行速度快，但相应的缺点也很明显，没有动态性。我们常见的C语言就使用直接派发、C&#43;&#43;默认也使用直接派发。
+  动态派发(Dynamic Dispatch)
+动态派发是指需要在运行时选择方法的具体实现。动态调度是多态的具体实现过程，被广泛的应用于 OOP 语言(object-oriented programing)中。一般实现动态派发的方式有以下几种：
+  函数表派发
+函数表派发是动态派发最常见的一种实现方式。每个类中会存在一个函数表，存储了每个函数实现的指针。当调用方法时，先找到类的函数表，然后再函数表中找到要调用的方法指针，最后根据该指针找到方法的具体实现。C&#43;&#43;、Java 等语言就是通过函数表的方式来实现多态。
+  消息派发
+方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。
+    2. SIL SIL 是 Swift 编译器中间语言，通过 swiftc 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过SIL文档中对动态调度的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：
+ class_method 和 super_method 使用 vtable 派发 witness_method 使用 witness_table 派发(Swift 协议中函数表派发的实现) objc_method 和 objc_super_method 使用 Objective-C message 派发，并使用 foreign 标记 其他诸如 function_ref 等指令使用的是静态派发  3." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://opleonnn.github.io/post/swift-dispatch/" /><meta property="article:section" content="post" />
+<meta property="article:published_time" content="2021-01-08T14:30:41&#43;08:00" />
+<meta property="article:modified_time" content="2021-01-08T14:30:41&#43;08:00" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Swift Dispatch"/>
+<meta name="twitter:description" content="本文探讨一下 Swift 中的方法调度。
+1. 派发机制 函数派发(Method Dispatch)又名方法调度，简单讲就是编程语言在源代码中判断用哪种方式调用函数的机制。一般来讲方法派发的方式分为两种：
+  静态派发(Static Dispatch)
+又被称为直接派发，系统直接按照方法的具体实现地址进行调用，在编译期间就确定了调用的方法的具体实现。甚至编译器能够进行内联优化，因此，当调用该方法时，调用的指令集非常少，执行速度快，但相应的缺点也很明显，没有动态性。我们常见的C语言就使用直接派发、C&#43;&#43;默认也使用直接派发。
+  动态派发(Dynamic Dispatch)
+动态派发是指需要在运行时选择方法的具体实现。动态调度是多态的具体实现过程，被广泛的应用于 OOP 语言(object-oriented programing)中。一般实现动态派发的方式有以下几种：
+  函数表派发
+函数表派发是动态派发最常见的一种实现方式。每个类中会存在一个函数表，存储了每个函数实现的指针。当调用方法时，先找到类的函数表，然后再函数表中找到要调用的方法指针，最后根据该指针找到方法的具体实现。C&#43;&#43;、Java 等语言就是通过函数表的方式来实现多态。
+  消息派发
+方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。
+    2. SIL SIL 是 Swift 编译器中间语言，通过 swiftc 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过SIL文档中对动态调度的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：
+ class_method 和 super_method 使用 vtable 派发 witness_method 使用 witness_table 派发(Swift 协议中函数表派发的实现) objc_method 和 objc_super_method 使用 Objective-C message 派发，并使用 foreign 标记 其他诸如 function_ref 等指令使用的是静态派发  3."/>
+<link href='https://fonts.googleapis.com/css?family=Playfair+Display:700' rel='stylesheet' type='text/css'>
+	<link rel="stylesheet" type="text/css" media="screen" href="https://opleonnn.github.iocss/normalize.css" />
+	<link rel="stylesheet" type="text/css" media="screen" href="https://opleonnn.github.iocss/main.css" />
+
+        <link id="dark-scheme" rel="stylesheet" type="text/css" href="https://opleonnn.github.iocss/dark.css" />
+
+	<script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+		<script src="https://opleonnn.github.iojs/main.js"></script>
+</head>
+
+<body>
+	<div class="container wrapper">
+		<div class="header">
+	
+		<div class="avatar">
+			<a href="https://opleonnn.github.io">
+				<img src="https://avatars0.githubusercontent.com/u/48051254?s=460&amp;u=09cd38c785b674756a705c9958cfc5c0245c6936&amp;v=4" alt="Leon" />
+			</a>
+		</div>
+	
+	<h1 class="site-title"><a href="https://opleonnn.github.io">Leon</a></h1>
+	<div class="site-description"><p>学无止境</p><nav class="nav social">
+			<ul class="flat"><li><a href="https://github.com/opleonnn" title="Github"><i data-feather="github"></i></a></li><li><a href="/index.xml" title="RSS"><i data-feather="rss"></i></a></li><li><a href="#" class="scheme-toggle" id="scheme-toggle"></a></li></ul>
+		</nav>
+	</div>
+
+	<nav class="nav">
+		<ul class="flat">
+			
+			<li>
+				<a href="/">主页</a>
+			</li>
+			
+			<li>
+				<a href="/posts">文章</a>
+			</li>
+			
+			<li>
+				<a href="/about">关于</a>
+			</li>
+			
+			<li>
+				<a href="/tags">标签</a>
+			</li>
+			
+		</ul>
+	</nav>
+</div>
+
+
+		<div class="post">
+			<div class="post-header">
+				
+					<div class="meta">
+						<div class="date">
+							<span class="day">08</span>
+							<span class="rest">Jan 2021</span>
+						</div>
+					</div>
+				
+				<div class="matter">
+					<h1 class="title">Swift Dispatch</h1>
+				</div>
+			</div>
+					
+			<div class="markdown">
+				<p>本文探讨一下 Swift 中的方法调度。</p>
+<h1 id="1-派发机制">1. 派发机制</h1>
+<p>函数派发(Method Dispatch)又名方法调度，简单讲就是编程语言在源代码中判断用哪种方式调用函数的机制。一般来讲方法派发的方式分为两种：</p>
+<ul>
+<li>
+<p>静态派发(<a href="https://en.wikipedia.org/wiki/Static_dispatch">Static Dispatch</a>)</p>
+<p>又被称为直接派发，系统直接按照方法的具体实现地址进行调用，在编译期间就确定了调用的方法的具体实现。甚至编译器能够进行内联优化，因此，当调用该方法时，调用的指令集非常少，执行速度快，但相应的缺点也很明显，没有动态性。我们常见的C语言就使用直接派发、C++默认也使用直接派发。</p>
+</li>
+<li>
+<p>动态派发(<a href="https://en.wikipedia.org/wiki/Dynamic_dispatch">Dynamic Dispatch</a>)</p>
+<p>动态派发是指需要在运行时选择方法的具体实现。动态调度是多态的具体实现过程，被广泛的应用于 OOP 语言(object-oriented programing)中。一般实现动态派发的方式有以下几种：</p>
+<ul>
+<li>
+<p>函数表派发</p>
+<p>函数表派发是动态派发最常见的一种实现方式。每个类中会存在一个函数表，存储了每个函数实现的指针。当调用方法时，先找到类的函数表，然后再函数表中找到要调用的方法指针，最后根据该指针找到方法的具体实现。C++、Java 等语言就是通过函数表的方式来实现多态。</p>
+</li>
+<li>
+<p>消息派发</p>
+<p>方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="2-sil">2. SIL</h1>
+<p><a href="https://github.com/apple/swift/blob/main/docs/SIL.rst">SIL</a> 是 Swift 编译器中间语言，通过 <code>swiftc</code> 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过SIL文档中对<a href="https://github.com/apple/swift/blob/main/docs/SIL.rst#dynamic-dispatch">动态调度</a>的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：</p>
+<ul>
+<li><code>class_method</code> 和 <code>super_method</code> 使用 <code>vtable</code> 派发</li>
+<li><code>witness_method</code> 使用 <code>witness_table</code> 派发(Swift 协议中函数表派发的实现)</li>
+<li><code>objc_method</code> 和 <code>objc_super_method</code> 使用 <code>Objective-C message</code> 派发，并使用 <code>foreign</code> 标记</li>
+<li>其他诸如 <code>function_ref</code> 等指令使用的是静态派发</li>
+</ul>
+<h1 id="3-swift-中的派发方式">3. Swift 中的派发方式</h1>
+<p>Swift 中支持以下三种派发方式</p>
+<ol>
+<li>静态派发</li>
+<li>函数表派发</li>
+<li>消息派发</li>
+</ol>
+<p>Swift 中的派发机制主要与以下四点有关</p>
+<ul>
+<li>数据类型</li>
+<li>声明位置</li>
+<li>指定派发方式</li>
+<li>编译器优化</li>
+</ul>
+<h2 id="31-数据类型">3.1 数据类型</h2>
+<ul>
+<li>
+<p>值类型</p>
+<p>先来分析一下 Swift 结构体中的函数派发方式</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#00f">struct</span> <span style="color:#2b91af">MyStruct</span> {
+    <span style="color:#00f">func</span> myMethod() {}
+}
+
+<span style="color:#00f">let</span> myStruct = MyStruct()
+myStruct.myMethod()
+</code></pre></div><p>利用 swiftc 将上述代码转换成 SIL，命令为 <code>swiftc -emit-silgen main.swift &gt; main.sil</code></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// 截取 myStruct 的创建和调用 myMethod 方法部分</span>
+<span style="color:#008000">// function_ref MyStruct.init()</span>
+%5 = function_ref @<span style="">$</span>s4main8MyStructVACycfC : <span style="">$</span>@convention(method) (@thin MyStruct.<span style="color:#00f">Type</span>) -&gt; MyStruct <span style="color:#008000">// user: %6</span>
+%6 = apply %5(%4) : <span style="">$</span>@convention(method) (@thin MyStruct.<span style="color:#00f">Type</span>) -&gt; MyStruct <span style="color:#008000">// user: %7</span>
+store %6 to [trivial] %3 : <span style="">$</span>*MyStruct           <span style="color:#008000">// id: %7</span>
+%8 = load [trivial] %3 : <span style="">$</span>*MyStruct             <span style="color:#008000">// user: %10</span>
+<span style="color:#008000">// function_ref MyStruct.myMethod()</span>
+%9 = function_ref @<span style="">$</span>s4main8MyStructV8myMethodyyF : <span style="">$</span>@convention(method) (MyStruct) -&gt; () <span style="color:#008000">// user: %10</span>
+%10 = apply %9(%8) : <span style="">$</span>@convention(method) (MyStruct) -&gt; ()
+</code></pre></div><p>从上述代码中我们可以看到在调用了 <code>MyStruct.init()</code> 方法后，直接调用了 <code>MyStruct.myMethod()</code>，同时调用该方法前使用了 <code>function_ref</code> 指令，使用的是静态派发。利用同样的方法，我们可以验证 enum 中的方法同样使用静态调度。因此我们可以得出结论，Swift 中值类型的方法采用静态派发。</p>
+</li>
+<li>
+<p>引用类型</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#00f">class</span> <span style="color:#2b91af">MyClass</span> {
+    <span style="color:#00f">func</span> myMethod() {}
+}
+
+<span style="color:#00f">let</span> myClass = MyClass()
+myClass.myMethod()
+</code></pre></div><p>转换成 SIL 后，我们查看以下关键代码</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// main</span>
+sil @main : <span style="">$</span>@convention(c) (Int32, UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;) -&gt; Int32 {
+bb0(%0 : <span style="">$</span>Int32, %1 : <span style="">$</span>UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;):
+  <span style="color:#008000">// 省略无关代码...</span>
+  %9 = class_method %8 : <span style="">$</span>MyClass, #MyClass.myMethod : (MyClass) -&gt; () -&gt; (), <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; () <span style="color:#008000">// user: %10</span>
+  %10 = apply %9(%8) : <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; ()
+  <span style="color:#008000">// 省略无关代码...</span>
+} <span style="color:#008000">// end sil function &#39;main&#39;</span>
+
+<span style="color:#008000">// ...</span>
+<span style="color:#008000">// 省略无关代码...</span>
+<span style="color:#008000">// ...</span>
+
+sil_vtable MyClass {
+  #MyClass.myMethod: (MyClass) -&gt; () -&gt; () : @<span style="">$</span>s4main7MyClassC8myMethodyyF	<span style="color:#008000">// MyClass.myMethod()</span>
+  <span style="color:#008000">// 省略无关代码...</span>
+}
+</code></pre></div><p>我们可以看到 <code>MyClass.myMethod</code> 方法出现在了 MyClass 的 <code>sil_vtable</code> 表中，同时调用 MyClass 中的 <code>myMethod</code> 方法前使用的指令为 <code>class_method</code>，根据 <a href="https://github.com/apple/swift/blob/main/docs/SIL.rst#dynamic-dispatch">SIL 文档</a> 解释，此处使用的是 <code>vtable dispatch</code>(函数表派发)。</p>
+</li>
+<li>
+<p>协议</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#00f">protocol</span> <span style="color:#2b91af">MyProtocol</span> {
+    <span style="color:#00f">func</span> myMethod()
+}
+
+<span style="color:#00f">class</span> <span style="color:#2b91af">MyClass</span>: MyProtocol {
+    <span style="color:#00f">func</span> myMethod() {}
+}
+
+<span style="color:#00f">let</span> myProtocol: MyProtocol = MyClass()
+myProtocol.myMethod()
+</code></pre></div><p>转换成 SIL</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// main</span>
+sil [ossa] @main : <span style="">$</span>@convention(c) (Int32, UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;) -&gt; Int32 {
+bb0(%0 : <span style="">$</span>Int32, %1 : <span style="">$</span>UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;):
+    <span style="color:#008000">// 省略无关代码...</span>
+  %10 = witness_method <span style="">$</span>@opened(<span style="color:#a31515">&#34;1C1A86E8-E2F3-11EB-B18F-ACDE48001122&#34;</span>) MyProtocol, #MyProtocol.myMethod : &lt;<span style="color:#00f">Self</span> <span style="color:#00f">where</span> <span style="color:#00f">Self</span> : MyProtocol&gt; (<span style="color:#00f">Self</span>) -&gt; () -&gt; (), %9 : <span style="">$</span>*@opened(<span style="color:#a31515">&#34;1C1A86E8-E2F3-11EB-B18F-ACDE48001122&#34;</span>) MyProtocol : <span style="">$</span>@convention(witness_method: MyProtocol) &lt;<span style="">τ</span>_0_0 <span style="color:#00f">where</span> <span style="">τ</span>_0_0 : MyProtocol&gt; (@in_guaranteed <span style="">τ</span>_0_0) -&gt; () <span style="color:#008000">// type-defs: %9; user: %11</span>
+  %11 = apply %10&lt;@opened(<span style="color:#a31515">&#34;1C1A86E8-E2F3-11EB-B18F-ACDE48001122&#34;</span>) MyProtocol&gt;(%9) : <span style="">$</span>@convention(witness_method: MyProtocol) &lt;<span style="">τ</span>_0_0 <span style="color:#00f">where</span> <span style="">τ</span>_0_0 : MyProtocol&gt; (@in_guaranteed <span style="">τ</span>_0_0) -&gt; () <span style="color:#008000">// type-defs: %9</span>
+  <span style="color:#008000">// 省略无关代码...</span>
+} <span style="color:#008000">// end sil function &#39;main&#39;</span>
+
+<span style="color:#008000">// protocol witness for MyProtocol.myMethod() in conformance MyClass</span>
+sil <span style="color:#00f">private</span> [transparent] [thunk] [ossa] @<span style="">$</span>s4main7MyClassCAA0B8ProtocolA2aDP8myMethodyyFTW : <span style="">$</span>@convention(witness_method: MyProtocol) (@in_guaranteed MyClass) -&gt; () {
+<span style="color:#008000">// %0                                             // user: %1</span>
+bb0(%0 : <span style="">$</span>*MyClass):
+  %1 = load_borrow %0 : <span style="">$</span>*MyClass                 <span style="color:#008000">// users: %5, %3, %2</span>
+  %2 = class_method %1 : <span style="">$</span>MyClass, #MyClass.myMethod : (MyClass) -&gt; () -&gt; (), <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; () <span style="color:#008000">// user: %3</span>
+  %3 = apply %2(%1) : <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; ()
+  %4 = tuple ()                                   <span style="color:#008000">// user: %6</span>
+  end_borrow %1 : <span style="">$</span>MyClass                        <span style="color:#008000">// id: %5</span>
+  <span style="color:#00f">return</span> %4 : <span style="">$</span>()                                 <span style="color:#008000">// id: %6</span>
+} <span style="color:#008000">// end sil function &#39;$s4main7MyClassCAA0B8ProtocolA2aDP8myMethodyyFTW&#39;</span>
+
+sil_vtable MyClass {
+  #MyClass.myMethod: (MyClass) -&gt; () -&gt; () : @<span style="">$</span>s4main7MyClassC8myMethodyyF	<span style="color:#008000">// MyClass.myMethod()</span>
+  <span style="color:#008000">// 省略无关代码...</span>
+}
+
+sil_witness_table hidden MyClass: MyProtocol module main {
+  method #MyProtocol.myMethod: &lt;<span style="color:#00f">Self</span> <span style="color:#00f">where</span> <span style="color:#00f">Self</span> : MyProtocol&gt; (<span style="color:#00f">Self</span>) -&gt; () -&gt; () : @<span style="">$</span>s4main7MyClassCAA0B8ProtocolA2aDP8myMethodyyFTW	<span style="color:#008000">// protocol witness for MyProtocol.myMethod() in conformance MyClass</span>
+}
+</code></pre></div><p>我们可以看到 <code>myMethod</code> 出现在了 <code>sil_witness_table</code> 中，调用时用 <code>witness_method</code> 指令，所以 protocol 中的方法也采用动态派发。此外，我们通过 <code>MyProtocol.myMethod</code> 的具体实现 <code>@$s4main7MyClassCAA0B8ProtocolA2aDP8myMethodyyFTW</code> 可以看到，其内部还是调用了 <code>MyClass.myMethod</code> 方法。</p>
+</li>
+</ul>
+<p>通过上述分析我们可以得出结论：值类型的函数采用静态派发，引用类型的函数采用动态派发(class 采用 <code>vtable</code>，protocol 采用 <code>witness_table</code>)。</p>
+<h2 id="32-声明位置">3.2 声明位置</h2>
+<p>函数声明位置的不同使用的派发方式也可能不相同，我们接着3.1中的分析继续验证在各个数据结构的扩展中声明的函数派发方式</p>
+<ul>
+<li>
+<p>值类型</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#00f">struct</span> <span style="color:#2b91af">MyStruct</span> {}
+
+<span style="color:#00f">extension</span> <span style="color:#2b91af">MyStruct</span> {
+    <span style="color:#00f">func</span> myMethod() {}
+}
+
+<span style="color:#00f">let</span> myStruct = MyStruct()
+myStruct.myMethod()
+</code></pre></div><p>转换成 SIL 后函数调用部分代码</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// function_ref MyStruct.myMethod()</span>
+%9 = function_ref @<span style="">$</span>s4main8MyStructV8myMethodyyF : <span style="">$</span>@convention(method) (MyStruct) -&gt; () <span style="color:#008000">// user: %10</span>
+%10 = apply %9(%8) : <span style="">$</span>@convention(method) (MyStruct) -&gt; ()
+</code></pre></div><p>我们看到对于 struct 来说，在 extension 中声明的函数并不会改变派发方式，依然采用静态派发。同理我们可验证在 enum extension 中依然采用静态派发。</p>
+</li>
+<li>
+<p>引用类型</p>
+<p>将函数声明放在 class extension 中的 SIL 代码如下</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// main</span>
+sil @main : <span style="">$</span>@convention(c) (Int32, UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;) -&gt; Int32 {
+bb0(%0 : <span style="">$</span>Int32, %1 : <span style="">$</span>UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;):
+  <span style="color:#008000">// 省略无关代码...</span>
+  <span style="color:#008000">// function_ref MyClass.myMethod()</span>
+  %9 = function_ref @<span style="">$</span>s4main7MyClassC8myMethodyyF : <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; () <span style="color:#008000">// user: %10</span>
+  %10 = apply %9(%8) : <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; ()
+  <span style="color:#008000">// 省略无关代码...</span>
+} <span style="color:#008000">// end sil function &#39;main&#39;</span>
+
+sil_vtable MyClass {
+  #MyClass.<span style="color:#00f">init</span>!allocator: (MyClass.<span style="color:#00f">Type</span>) -&gt; () -&gt; MyClass : @<span style="">$</span>s4main7MyClassCACycfC	<span style="color:#008000">// MyClass.__allocating_init()</span>
+  #MyClass.<span style="color:#00f">deinit</span>!deallocator: @<span style="">$</span>s4main7MyClassCfD	<span style="color:#008000">// MyClass.__deallocating_deinit</span>
+}
+</code></pre></div><p>我们可以看到，MyClass 的 <code>vtable</code> 中已经没有了 <code>myMethod</code> 方法。同时，调用 <code>myMethod</code> 时采用了静态派发的方式，这说明 class extension 中方法的派发方式为静态派发。</p>
+</li>
+<li>
+<p>协议</p>
+<p>我们将函数的声明位置放到 protocol extension 中，生成的 SIL如下</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// main</span>
+sil [ossa] @main : <span style="">$</span>@convention(c) (Int32, UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;) -&gt; Int32 {
+bb0(%0 : <span style="">$</span>Int32, %1 : <span style="">$</span>UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;):
+  <span style="color:#008000">// 省略无关代码...</span>
+  <span style="color:#008000">// function_ref MyProtocol.myMethod()</span>
+  %10 = function_ref @<span style="">$</span>s4main10MyProtocolPAAE8myMethodyyF : <span style="">$</span>@convention(method) &lt;<span style="">τ</span>_0_0 <span style="color:#00f">where</span> <span style="">τ</span>_0_0 : MyProtocol&gt; (@in_guaranteed <span style="">τ</span>_0_0) -&gt; () <span style="color:#008000">// user: %11</span>
+  %11 = apply %10&lt;@opened(<span style="color:#a31515">&#34;0BF36FCA-E38C-11EB-96BB-ACDE48001122&#34;</span>) MyProtocol&gt;(%9) : <span style="">$</span>@convention(method) &lt;<span style="">τ</span>_0_0 <span style="color:#00f">where</span> <span style="">τ</span>_0_0 : MyProtocol&gt; (@in_guaranteed <span style="">τ</span>_0_0) -&gt; () <span style="color:#008000">// type-defs: %9</span>
+  <span style="color:#008000">// 省略无关代码...</span>
+} <span style="color:#008000">// end sil function &#39;main&#39;</span>
+
+<span style="color:#008000">// ...</span>
+<span style="color:#008000">// 省略无关代码...</span>
+<span style="color:#008000">// ...</span>
+
+sil_witness_table hidden MyClass: MyProtocol module main {
+}
+</code></pre></div><p>我们可以看到 <code>sil_witness_table</code> 中并没有 <code>myMethod</code> 方法，且调用时直接代用静态派发。</p>
+</li>
+</ul>
+<p>通过以上分析我们可以得出结论：值类型、引用类型和协议三者的扩展中声明的方法采用静态派发。</p>
+<h2 id="33-指定派发方式">3.3 指定派发方式</h2>
+<p>我们只讨论会改变其原本派发方式的关键字</p>
+<ul>
+<li>
+<p><code>final</code></p>
+<p><code>final</code> 是用于 classes 或者 class members 前的关键字，用来防止被重写，当类的函数使用 <code>final</code> 关键字修饰后，生成的 SIL</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// main</span>
+sil [ossa] @main : <span style="">$</span>@convention(c) (Int32, UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;) -&gt; Int32 {
+bb0(%0 : <span style="">$</span>Int32, %1 : <span style="">$</span>UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;):
+  <span style="color:#008000">// 省略无关代码...</span>
+  <span style="color:#008000">// function_ref MyClass.myMethod()</span>
+  %9 = function_ref @<span style="">$</span>s4main7MyClassC8myMethodyyF : <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; () <span style="color:#008000">// user: %10</span>
+  %10 = apply %9(%8) : <span style="">$</span>@convention(method) (@guaranteed MyClass) -&gt; ()
+  <span style="color:#008000">// 省略无关代码...</span>
+} <span style="color:#008000">// end sil function &#39;main&#39;</span>
+
+<span style="color:#008000">// ...</span>
+<span style="color:#008000">// 省略无关代码...</span>
+<span style="color:#008000">// ...</span>
+
+sil_vtable MyClass {
+  #MyClass.<span style="color:#00f">init</span>!allocator: (MyClass.<span style="color:#00f">Type</span>) -&gt; () -&gt; MyClass : @<span style="">$</span>s4main7MyClassCACycfC	<span style="color:#008000">// MyClass.__allocating_init()</span>
+  #MyClass.<span style="color:#00f">deinit</span>!deallocator: @<span style="">$</span>s4main7MyClassCfD	<span style="color:#008000">// MyClass.__deallocating_deinit</span>
+}
+</code></pre></div><p>可以看出函数的派发方式变成了静态派发，而且 <code>sil_vtable</code> 中已没有了 <code>myMethod</code> 方法。同样的，用 <code>final</code> 关键字修饰 class 后，自定义的函数同样会被自动定义为 <code>final</code>，所以派发方式也为静态派发。</p>
+</li>
+<li>
+<p><code>static</code></p>
+<p>通过在方法的 <code>func</code> 关键字前写上 <code>static</code> 关键字来表示类型方法，Swift 中的所有类型(结构体、枚举、类、协议)都可以定义类型方法。</p>
+<p>struct、struct extension、enum、enum extension、class、class extension、protocol、protocol extension 等类型中的方法用 <code>static</code> 修饰后都采用静态派发方式，这里不做验证，有兴趣可自行转换成 SIL 查看。</p>
+</li>
+<li>
+<p><code>class</code></p>
+<p>在 Swift 类中声明类型方法时 <code>static</code> 关键字可用 <code>class</code> 来代替，并且如果没有 <code>final</code> 修饰的话，允许子类覆盖父类对该方法的实现。对应的 SIL 为</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#008000">// main</span>
+sil [ossa] @main : <span style="">$</span>@convention(c) (Int32, UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;) -&gt; Int32 {
+bb0(%0 : <span style="">$</span>Int32, %1 : <span style="">$</span>UnsafeMutablePointer&lt;Optional&lt;UnsafeMutablePointer&lt;Int8&gt;&gt;&gt;):
+  <span style="color:#008000">// 省略无关代码...</span>
+  %3 = class_method %2 : <span style="">$</span>@thick MyClass.<span style="color:#00f">Type</span>, #MyClass.myMethod : (MyClass.<span style="color:#00f">Type</span>) -&gt; () -&gt; (), <span style="">$</span>@convention(method) (@thick MyClass.<span style="color:#00f">Type</span>) -&gt; () <span style="color:#008000">// user: %4</span>
+  %4 = apply %3(%2) : <span style="">$</span>@convention(method) (@thick MyClass.<span style="color:#00f">Type</span>) -&gt; ()
+  <span style="color:#008000">// 省略无关代码...</span>
+} <span style="color:#008000">// end sil function &#39;main&#39;</span>
+
+<span style="color:#008000">//</span>
+<span style="color:#008000">// 省略无关代码...</span>
+<span style="color:#008000">//</span>
+
+sil_vtable MyClass {
+  #MyClass.myMethod: (MyClass.<span style="color:#00f">Type</span>) -&gt; () -&gt; () : @<span style="">$</span>s4main7MyClassC8myMethodyyFZ	<span style="color:#008000">// static MyClass.myMethod()</span>
+  #MyClass.<span style="color:#00f">init</span>!allocator: (MyClass.<span style="color:#00f">Type</span>) -&gt; () -&gt; MyClass : @<span style="">$</span>s4main7MyClassCACycfC	<span style="color:#008000">// MyClass.__allocating_init()</span>
+  #MyClass.<span style="color:#00f">deinit</span>!deallocator: @<span style="">$</span>s4main7MyClassCfD	<span style="color:#008000">// MyClass.__deallocating_deinit</span>
+}
+</code></pre></div><p>我们可以看到，用 <code>class</code> 来修饰的类方法出现在了 <code>sil_vtable</code> 中，且采用的是动态派发。此外，在类的扩展中的方法用 <code>class</code> 修饰后依然采用静态派发，且子类不可重写(子类重写会得到一个编译时错误)。</p>
+</li>
+<li>
+<p><code>@objc</code></p>
+<p>class extension 中的方法用 <code>@objc</code> 标记后派发方式改为了消息派发。至于原因，目前还没有找到相关的文档说明</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift">%9 = objc_method %8 : <span style="">$</span>MyClass, #MyClass.myMethod!foreign : (MyClass) -&gt; () -&gt; (), <span style="">$</span>@convention(objc_method) (MyClass) -&gt; () <span style="color:#008000">// user: %10</span>
+%10 = apply %9(%8) : <span style="">$</span>@convention(objc_method) (MyClass) -&gt; ()
+</code></pre></div></li>
+<li>
+<p><code>@objc dynamic</code></p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift">%9 = objc_method %8 : <span style="">$</span>MyClass, #MyClass.myMethod!foreign : (MyClass) -&gt; () -&gt; (), <span style="">$</span>@convention(objc_method) (MyClass) -&gt; () <span style="color:#008000">// user: %10</span>
+%10 = apply %9(%8) : <span style="">$</span>@convention(objc_method) (MyClass) -&gt; ()
+</code></pre></div><p>class 或者 class extension 中的方法被标记为 <code>@objc dynamic</code> 会变成消息派发</p>
+</li>
+</ul>
+<h2 id="4-效率对比">4. 效率对比</h2>
+<p>我们来对比一下 Swift 中各种方法调度所耗费的时间</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-swift" data-lang="swift"><span style="color:#00f">protocol</span> <span style="color:#2b91af">TestProtocol</span> {
+    <span style="color:#00f">func</span> witnessTableDispatch()
+}
+
+<span style="color:#00f">struct</span> <span style="color:#2b91af">TestStruct</span> {
+    <span style="color:#00f">func</span> staticDispatch() {}
+}
+
+<span style="color:#00f">class</span> <span style="color:#2b91af">TestClass</span>: TestProtocol {
+    <span style="color:#00f">final</span> <span style="color:#00f">func</span> staticDispatch() {}
+    <span style="color:#00f">func</span> vTableDispatch() {}
+    <span style="color:#00f">func</span> witnessTableDispatch() {}
+    <span style="color:#00f">@objc</span> <span style="color:#00f">dynamic</span> <span style="color:#00f">func</span> messageDispatch() {}
+}
+
+<span style="color:#00f">var</span> testStruct = TestStruct()
+<span style="color:#00f">var</span> testClass = TestClass()
+
+<span style="color:#00f">var</span> startDate = Date()
+<span style="color:#00f">var</span> maxTimes = Int(1e7)
+
+(1...maxTimes).forEach { <span style="color:#00f">_</span> <span style="color:#00f">in</span> testStruct.staticDispatch() }
+print(<span style="color:#a31515">&#34;static dispatch in struct duration: </span><span style="color:#a31515">\(</span>Date<span style="color:#a31515">()</span>.timeIntervalSince<span style="color:#a31515">(</span>startDate<span style="color:#a31515">))</span><span style="color:#a31515">&#34;</span>)
+
+startDate = Date()
+(1...maxTimes).forEach { <span style="color:#00f">_</span> <span style="color:#00f">in</span> testClass.staticDispatch() }
+print(<span style="color:#a31515">&#34;static dispatch in class duration: </span><span style="color:#a31515">\(</span>Date<span style="color:#a31515">()</span>.timeIntervalSince<span style="color:#a31515">(</span>startDate<span style="color:#a31515">))</span><span style="color:#a31515">&#34;</span>)
+
+startDate = Date()
+(1...maxTimes).forEach { <span style="color:#00f">_</span> <span style="color:#00f">in</span> testClass.vTableDispatch() }
+print(<span style="color:#a31515">&#34;vtable dispatch duration: </span><span style="color:#a31515">\(</span>Date<span style="color:#a31515">()</span>.timeIntervalSince<span style="color:#a31515">(</span>startDate<span style="color:#a31515">))</span><span style="color:#a31515">&#34;</span>)
+
+startDate = Date()
+(1...maxTimes).forEach { <span style="color:#00f">_</span> <span style="color:#00f">in</span> testClass.witnessTableDispatch() }
+print(<span style="color:#a31515">&#34;witness_table dispatch duration: </span><span style="color:#a31515">\(</span>Date<span style="color:#a31515">()</span>.timeIntervalSince<span style="color:#a31515">(</span>startDate<span style="color:#a31515">))</span><span style="color:#a31515">&#34;</span>)
+
+startDate = Date()
+(1...maxTimes).forEach { <span style="color:#00f">_</span> <span style="color:#00f">in</span> testClass.messageDispatch() }
+print(<span style="color:#a31515">&#34;objc_message dispatch duration: </span><span style="color:#a31515">\(</span>Date<span style="color:#a31515">()</span>.timeIntervalSince<span style="color:#a31515">(</span>startDate<span style="color:#a31515">))</span><span style="color:#a31515">&#34;</span>)
+</code></pre></div><p>经过多次运行，输出结果</p>
+<p><img src="/images/swift_dispatch_performance.png" alt="swift_dispatch_performance"></p>
+<p>我们可以发现，struct 中的静态派发要比 class 中的快，而 class 中的静态派发、vtable 派发 和 witness_table 派发耗时基本相同，objc_message 派发最慢。从而我们可以得出 Swift 中派发方式执行效率排名：</p>
+<p>静态派发 &gt; 函数派发 &gt; 消息派发</p>
+<h2 id="总结">总结</h2>
+<p>Swift 中支持静态派发和动态派发的方式，而且实现动态派发的方式还不止一种(<code>vtable</code>、<code>witness_table</code>、<code>objc_message</code>)。数据类型、方法声明位置、方法关键字的不同，使用的派发方式也不同。汇总在一起可以得出如下表格：</p>
+<p><img src="/images/swift_dispatch_table.svg" alt="swift_dispatch_table"></p>
+<p>不同派发方式的执行效率也不同。此外，Swift 编译器还会优化编译方式，甚至会使用内联优化，从而使代码执行效率更高。</p>
+<p>而至于为什么效率对比中的输出结果中显示，结构体中的静态派发和类中的静态派发时间不一致？类中的静态派发时间和函数表派发时间差不多甚至还要更多一点？我们以后再探索。</p>
+
+			</div>
+
+			<div class="tags">
+				
+					
+				
+			</div><div id="disqus_thread"></div>
+<script type="text/javascript">
+	(function () {
+		
+		
+		if (window.location.hostname == "localhost")
+			return;
+
+		var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+		var disqus_shortname = 'ink-demo';
+		dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+	})();
+</script>
+<noscript>Please enable JavaScript to view the </a></noscript>
+<a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div>
+	</div>
+	<div class="footer wrapper">
+	<nav class="nav">
+		<div>2021  © Leon. |  <a href="https://github.com/knadh/hugo-ink">Ink</a> theme on <a href="https://gohugo.io">Hugo</a></div>
+	</nav>
+</div>
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-123-45', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<script>feather.replace()</script>
+</body>
+</html>
