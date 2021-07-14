@@ -1,5 +1,5 @@
 ---
-title: "Swift Dispatch"
+title: "Swift 中的派发机制"
 date: 2021-01-08T14:30:41+08:00
 type: "posts"
 draft: false
