@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Leon</title><link>https://opleonnn.github.io/posts/</link><description>Recent content in Posts on Leon</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><copyright>© Leon.</copyright><lastBuildDate>Fri, 08 Jan 2021 14:30:41 +0800</lastBuildDate><atom:link href="https://opleonnn.github.io/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Swift 中的派发机制</title><link>https://opleonnn.github.io/posts/swift-dispatch/</link><pubDate>Fri, 08 Jan 2021 14:30:41 +0800</pubDate><guid>https://opleonnn.github.io/posts/swift-dispatch/</guid><description>本文探讨一下 Swift 中的方法调度。
 1. 派发机制 函数派发(Method Dispatch)又名方法调度，简单讲就是编程语言在源代码中判断用哪种方式调用函数的机制。一般来讲方法派发的方式分为两种：
-静态派发(Static Dispatch)
-又被称为直接派发，系统直接按照方法的具体实现地址进行调用，在编译期间就确定了调用的方法的具体实现。甚至编译器能够进行内联优化，因此，当调用该方法时，调用的指令集非常少，执行速度快，但相应的缺点也很明显，没有动态性。我们常见的C语言就使用直接派发、C++默认也使用直接派发。
-动态派发(Dynamic Dispatch)
-动态派发是指需要在运行时选择方法的具体实现。动态调度是多态的具体实现过程，被广泛的应用于 OOP 语言(object-oriented programing)中。一般实现动态派发的方式有以下几种：
-函数表派发
-函数表派发是动态派发最常见的一种实现方式。每个类中会存在一个函数表，存储了每个函数实现的指针。当调用方法时，先找到类的函数表，然后再函数表中找到要调用的方法指针，最后根据该指针找到方法的具体实现。C++、Java 等语言就是通过函数表的方式来实现多态。
-消息派发
-方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。
-2. SIL SIL 是 Swift 编译器中间语言，通过 swiftc 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过SIL文档中对动态调度的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：
-class_method 和 super_method 使用 vtable 派发 witness_method 使用 witness_table 派发(Swift 协议中函数表派发的实现) objc_method 和 objc_super_method 使用 Objective-C message 派发，并使用 foreign 标记 其他诸如 function_ref 等指令使用的是静态派发 3.</description></item></channel></rss>
+静态派发 动态派发 静态派发(Static Dispatch) 又被称为直接派发，系统直接按照方法的具体实现地址进行调用，在编译期间就确定了调用的方法的具体实现。甚至编译器能够进行内联优化，因此，当调用该方法时，调用的指令集非常少，执行速度快，但相应的缺点也很明显，没有动态性。我们常见的C语言就使用直接派发、C++默认也使用直接派发。
+动态派发(Dynamic Dispatch) 动态派发是指需要在运行时选择方法的具体实现。动态调度是多态的具体实现过程，被广泛的应用于 OOP 语言(object-oriented programing)中。一般实现动态派发的方式有两种，函数表派发和消息派发。
+函数表派发 函数表派发是动态派发最常见的一种实现方式。每个类中会存在一个函数表，存储了每个函数实现的指针。当调用方法时，先找到类的函数表，然后再函数表中找到要调用的方法指针，最后根据该指针找到方法的具体实现。C++、Java 等语言就是通过函数表的方式来实现多态。
+消息派发 方法调用就是给对象发送消息。以 Objective-C 举例， 调用方法需要在相应的类中遍历其方法列表，如果能找到相匹配的方法就调用该方法的实现，如果找不到，就沿着继承链的顺序继续向上查找。
+2. SIL SIL 是 Swift 编译器中间语言，通过 swiftc 将 Swift 转化为 SIL 可以方便的查看 Swift 的方法派发方式。通过 SIL 文档中对动态调度的描述，我们可以查看动态调度所用的指令。这里简单总结下判断方法是动态调度还是静态调度的方式：
+class_method 和 super_method 使用 vtable 派发 witness_method 使用 witness_table 派发(Swift 协议中函数表派发的实现) objc_method 和 objc_super_method 使用 Objective-C message 派发，并使用 foreign 标记 其他诸如 function_ref 等指令使用的是静态派发 3. Swift 中的派发方式 Swift 中支持静态派发、函数表派发和消息派发三种派发方式，而派发方式主要与以下四点有关</description></item></channel></rss>
