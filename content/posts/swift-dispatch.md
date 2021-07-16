@@ -310,7 +310,7 @@ sil_vtable MyClass {
 
 #### `@objc`
 
-class extension 中的方法用 `@objc` 标记后派发方式改为了消息派发。至于原因，目前还没有找到相关的文档说明
+class extension 中的方法用 `@objc` 标记后派发方式改为了消息派发。至于原因，目前还没有找到相关的文档说明，比较靠谱的一个原因是 `@objc` 修饰的类扩展方法允许继承，而 Swift 类扩展中的方法默认使用静态派发，不具备动态性。所以派发方式改为消息派发。
 
 ```swift
 %9 = objc_method %8 : $MyClass, #MyClass.myMethod!foreign : (MyClass) -> () -> (), $@convention(objc_method) (MyClass) -> () // user: %10
